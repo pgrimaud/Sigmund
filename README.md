@@ -12,11 +12,12 @@ Developers just need to hit rebuild when working on a plugin to immediately see 
 Setup
 =====
  1. If needed, update ext/ with new Assembly-CSharp.dll, Mono.Cecil.dll (match the version Unity uses internally), and UnityEngine.dll
- 2. Fix hardcoded paths in Injector.cs and Sigmund.cs (basically, point to location of ext/ and plugins/)
- 3. Run injector to create patched Assembly-CSharp.dll which loads Sigmund.dll
- 4. Start game launcher. It will revert all game files to the originals
- 5. Rebuild the plugin or Sigmund, this will cause the patched Assembly-CSharp.dll to get copied to game directory
- 6. Start game and click through until you reach main Hub menu.
+ 2. Copy the Mono.Cecil.dll to the game directory Hearthstone\Hearthstone_Data\Managed.
+ 3. Fix hardcoded paths in Injector.cs and Sigmund.cs (basically, point to location of ext/ and plugins/)
+ 4. Run injector to create patched Assembly-CSharp.dll which loads Sigmund.dll
+ 5. Start game launcher. It will revert all game files to the originals
+ 6. Rebuild the plugin or Sigmund, this will cause the patched Assembly-CSharp.dll to get copied to game directory
+ 7. Start game and click through until you reach main Hub menu.
 
 You can open the dev console (Ctrl-Enter) and type "echo my message" to display "my message" to the screen.
  
@@ -25,6 +26,7 @@ Usage
  1. TestPlugin will load automatically (comment out line in Sigmund.Main.Start to disable)
  2. Modify or create any files in plugins/ directory will cause them to be (re)loaded
  3. Open dev console (Ctrl-Enter) and type "run somePlugin" will (re)load the somePlugin.dll in plugins/
+ 4. Log data can be found in the game directory 'Hearthstone\Hearthstone_Data\output_log.txt'
 
 Projects
 ========
