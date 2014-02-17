@@ -17,7 +17,6 @@ namespace Plugin
         public static void init()
         {
             var go = SceneMgr.Get().gameObject; // attach to SceneMgr since it always exists
-
             // destroy any old versions of ourself
             GameObject.Destroy(go.GetComponent("Plugin"));
             foreach (var x in go.GetComponents<Plugin>())
@@ -60,7 +59,7 @@ namespace Plugin
         Player ePlayer;
         float timeLastQueued;
         static float maxQueueTime = 60 * 3;
-        static bool playVsHumans = true;
+        static bool playVsHumans = false;
         static bool playRanked = false;
 
         public void Init_Game()
@@ -91,6 +90,7 @@ namespace Plugin
                     }
                     else
                     {
+                        Log.say("Playing game against practice AI");
                         SceneMgr.Get().SetNextMode(SceneMgr.Mode.PRACTICE);
                     }
                     break;
@@ -427,6 +427,31 @@ namespace Plugin
                     if (EnemyActionHandler.Get() != null)
                     {
                         EnemyActionHandler.Get().NotifyOpponentOfTargetModeBegin(c);
+
+                        // get a list of my cards on the battlefield, could do enemy cards as well
+                        var myPlayedCards = myPlayer.GetBattlefieldZone().GetCards().ToList();
+
+                        // look through the cards, would normally select one based on this
+                        foreach (Card card in myPlayedCards)
+                        {
+                            var e = card.GetEntity();
+                            Log.log("considering for battlecry: " + e.GetName());
+                        }
+
+                        // for now just do the first card in the list
+                        gs.GetGameEntity().NotifyOfBattlefieldCardClicked(myPlayedCards[0].GetEntity(), true);
+
+                        myPlayer.GetBattlefieldZone().UnHighlightBattlefield();
+                        Log.log("    Response mode pre: " + gs.GetResponseMode().ToString());
+                        if (InputManager.Get().DoNetworkResponse(myPlayedCards[0].GetEntity()))
+                        {
+                            Log.log("    Response mode post: " + gs.GetResponseMode().ToString());
+                            EnemyActionHandler.Get().NotifyOpponentOfTargetEnd();
+
+                            myPlayer.GetHandZone().UpdateLayout(-1, true);
+                            myPlayer.GetBattlefieldZone().UpdateLayout();
+                            Log.log("    target succeeded");
+                        }
                     }
                 }
                 else
