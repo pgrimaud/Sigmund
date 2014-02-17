@@ -18,12 +18,12 @@ namespace Sigmund
             var w = new Watchdog();
             w.startWatch();
             Log.log("Sigmund online");
-            w.RunPlugin("TestPlugin"); // temp for testing
+            //w.RunPlugin("TestPlugin"); // temp for testing
         }
     }
     public class Watchdog
     {
-        static string pluginDirectory = @"C:\Users\Joseph\Documents\Visual Studio 2013\Projects\HearthstoneBot\plugins";
+        static string pluginDirectory = @"C:\Users\Spood\Documents\GitHub\Sigmund\plugins";
         Loader loader;
         Hashtable mtimeDb = new Hashtable();
         public void startWatch()

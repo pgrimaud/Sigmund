@@ -10,9 +10,9 @@ namespace Injector
 {
     class Injector
     {
-        static string appOrigPath = @"C:\Users\Joseph\Documents\Visual Studio 2013\Projects\HearthstoneBot\ext\Assembly-CSharp.orig.dll";
-        static string injPath = @"C:\Users\Joseph\Documents\Visual Studio 2013\Projects\HearthstoneBot\ext\Sigmund.dll";
-        static string appPatchedPath = @"C:\Users\Joseph\Documents\Visual Studio 2013\Projects\HearthstoneBot\ext\Assembly-CSharp.dll";
+        static string appOrigPath = @"C:\Users\Spood\Documents\GitHub\Sigmund\ext\Assembly-CSharp.orig.dll";
+        static string injPath = @"C:\Users\Spood\Documents\GitHub\Sigmund\ext\Sigmund.dll";
+        static string appPatchedPath = @"C:\Users\Spood\Documents\GitHub\Sigmund\ext\Assembly-CSharp.dll";
 
         static string appTypeName = "SceneMgr";
         static string appMethodName = "Start";

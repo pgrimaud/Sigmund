@@ -13,7 +13,7 @@ Setup
 =====
  1. If needed, update ext/ with new Assembly-CSharp.dll, Mono.Cecil.dll (match the version Unity uses internally), and UnityEngine.dll
  2. Copy the Mono.Cecil.dll to the game directory Hearthstone\Hearthstone_Data\Managed.
- 3. Fix hardcoded paths in Injector.cs and Sigmund.cs (basically, point to location of ext/ and plugins/)
+ 3. Fix hardcoded paths in Injector.cs, Sigmund.cs (basically, point to location of ext/ and plugins/), and Sigmund.csproj (to Hearthstone game path)
  4. Run injector to create patched Assembly-CSharp.dll which loads Sigmund.dll
  5. Start game launcher. It will revert all game files to the originals
  6. Rebuild the plugin or Sigmund, this will cause the patched Assembly-CSharp.dll to get copied to game directory
