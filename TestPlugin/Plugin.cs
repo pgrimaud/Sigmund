@@ -155,7 +155,10 @@ namespace Plugin
                     {
                         bool stop = false;      // flag if we should stop at this step (and cont. next tick) instead of moving on
 
-                        stop = BruteHand();     // drops minions until out of mana
+                        stop = BruteMinion();     // drops minions until out of mana
+                        if (stop) { return; }
+
+                        stop = BruteSpell();
                         if (stop) { return; }
 
                         stop = BruteAttack();   // attacks enemies with minions randomly
@@ -184,7 +187,181 @@ namespace Plugin
             InputManager im = InputManager.Get();
             im.DoEndTurnButton();
         }
-        public bool BruteHand()
+        public bool BruteSpell()
+        {
+            var spell = NextBestSpell();
+            if (spell == null)
+            {
+                return false;
+            }
+            if (DoCastSpell(spell))
+            {
+                return true;    // successfully casted spell. stop here and continue next update
+            }
+            return true;
+        }
+        public Card NextBestSpell()
+        {
+            var myCards = myPlayer.GetHandZone().GetCards().ToList();
+
+            // get first valid spell we can afford
+            foreach (Card c in myCards)
+            {
+                var e = c.GetEntity();
+                Log.log("card " + e.GetName() + " has type: " + e.GetCardType());
+                // skip if not the right type, mana cost, etc
+                if (e.GetCardType() != TAG_CARDTYPE.ABILITY || e.GetCost() > myPlayer.GetNumAvailableResources())
+                {
+                    continue;
+                }
+                return c;
+            }
+            return null;
+        }
+        public bool DoCastSpell(Card c)
+        {
+            Log.log("DoCastSpell " + c.GetEntity().GetName());
+            try
+            {
+                // stop stuff
+                PegCursor.Get().SetMode(PegCursor.Mode.STOPDRAG);
+                c.SetDoNotSort(true);
+                iTween.Stop(c.gameObject);
+                KeywordHelpPanelManager.Get().HideKeywordHelp();
+                CardTypeBanner.Hide();
+
+                // pick up card
+                c.NotifyPickedUp();
+                gs.GetGameEntity().NotifyOfCardGrabbed(c.GetEntity());
+                Log.log("    picked card up");
+
+                // cast spell
+                c.SetDoNotSort(false);
+                
+
+                bool doTargetting = false;
+
+                gs.GetGameEntity().NotifyOfCardDropped(c.GetEntity());
+                if (InputManager.Get().DoNetworkResponse(c.GetEntity()))
+                {
+                    Log.log("    Response mode post: " + gs.GetResponseMode().ToString());
+
+                    // InputManager.ForceManaUpdate
+                    myPlayer.NotifyOfSpentMana(c.GetEntity().GetRealTimeCost());
+                    myPlayer.UpdateManaCounter();
+                    ManaCrystalMgr.Get().UpdateSpentMana(c.GetEntity().GetRealTimeCost());
+
+                    // handle battlecry targets
+                    if (gs.EntityHasTargets(c.GetEntity()))
+                    {
+                        doTargetting = true;
+                    }
+                    Log.log("    DoCastSpell: did inner updates");
+                }
+                else
+                {
+                    Log.log("    DoCastSpell DoNetworkReponse failed, unsetting position");
+                    gs.SetSelectedOptionPosition(Network.NoPosition);
+                    return false;
+                }
+
+                if (doTargetting)
+                {
+                    Log.log("    DoCastSpell doing targetting");
+                    if (EnemyActionHandler.Get() != null)
+                    {
+                        EnemyActionHandler.Get().NotifyOpponentOfTargetModeBegin(c);
+
+                        Entity targetEntity = null;
+
+                        var eHero = ePlayer.GetHeroCard().GetEntity();
+                        if (gs.IsValidOptionTarget(eHero))
+                        {
+                            Log.log("Can attack hero");
+                            targetEntity = eHero;
+                        }
+
+                        // get a list of my cards on the battlefield
+                        var myPlayedCards = myPlayer.GetBattlefieldZone().GetCards().ToList();
+                        if (myPlayedCards.Count > 0)
+                        {
+                            // look through the cards, would normally select one based on this
+                            foreach (Card card in myPlayedCards)
+                            {
+                                var e = card.GetEntity();
+                                if (gs.IsValidOptionTarget(e))
+                                {
+                                    Log.log("is valid target: " + e.GetName());
+                                    Log.log("considering for battlecry: " + e.GetName());
+                                    targetEntity = e;
+                                }
+                                else
+                                {
+                                    Log.log("is NOT valid target: " + e.GetName());
+                                }
+                            }
+                        }
+
+                        // get a list of enemy cards on the battlefield
+                        var ePlayedCards = ePlayer.GetBattlefieldZone().GetCards().ToList();
+                        if (ePlayedCards.Count > 0)
+                        {
+                            // look through the cards, would normally select one based on this
+                            foreach (Card card in ePlayedCards)
+                            {
+                                var e = card.GetEntity();
+                                if (gs.IsValidOptionTarget(e))
+                                {
+                                    Log.log("is valid target: " + e.GetName());
+                                    Log.log("considering for battlecry: " + e.GetName());
+                                    targetEntity = e;
+                                }
+                                else
+                                {
+                                    Log.log("is NOT valid target: " + e.GetName());
+                                }
+                            }
+                        }
+                        if (targetEntity == null)
+                        {
+                            Log.log("    No target entity selected");
+                            return false;
+                        }
+
+                        Log.log("selected targetEntity: " + targetEntity.GetName());
+                        gs.GetGameEntity().NotifyOfBattlefieldCardClicked(targetEntity, true);
+
+                        myPlayer.GetBattlefieldZone().UnHighlightBattlefield();
+                        Log.log("    Response mode pre: " + gs.GetResponseMode().ToString());
+                        if (InputManager.Get().DoNetworkResponse(targetEntity))
+                        {
+                            Log.log("    Response mode post: " + gs.GetResponseMode().ToString());
+                            EnemyActionHandler.Get().NotifyOpponentOfTargetEnd();
+
+                            myPlayer.GetHandZone().UpdateLayout(-1, true);
+                            myPlayer.GetBattlefieldZone().UpdateLayout();
+                            Log.log("    did battlecry on: " + targetEntity.GetName());
+                        }
+                        else
+                        {
+                            Log.log("    DoCastSpell DoTarget outer DoNetworkReponse failed");
+                        }
+                    }
+                }
+                else
+                {
+                    EnemyActionHandler.Get().NotifyOpponentOfCardDropped();
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.log("    Dropping minion failed (exception): " + ex.StackTrace.ToString());
+                return false;
+            }
+        }
+        public bool BruteMinion()
         {
             var drop = NextBestMinionDrop();
             if (drop == null)
