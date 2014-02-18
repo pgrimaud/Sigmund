@@ -178,9 +178,25 @@ namespace Plugin
         }
         public void DoMulligan()
         {
-            InputManager.Get().DoEndTurnButton();
-            TurnStartManager.Get().BeginListeningForTurnEvents();
-            MulliganManager.Get().EndMulliganEarly();
+            if (MulliganManager.Get().IsMulliganActive())
+            { 
+                var myCards = myPlayer.GetHandZone().GetCards().ToList();
+                foreach (Card c in myCards)
+                {
+                    var e = c.GetEntity();
+                    Log.log("card " + e.GetName() + " has cost: " + e.GetCost());
+                    if (e.GetCost() >= 4)
+                    {
+                        // toggle them to false
+                        MulliganManager.Get().ToggleHoldState(c);
+                    }
+                }
+                MulliganManager.Get().BeginDealNewCards();
+                //InputManager.Get().DoEndTurnButton();
+                //TurnStartManager.Get().BeginListeningForTurnEvents();
+                //MulliganManager.Get().EndMulligan();
+            }
+
         }
         public void DoEndTurn()
         {
@@ -251,7 +267,8 @@ namespace Plugin
                     myPlayer.UpdateManaCounter();
                     ManaCrystalMgr.Get().UpdateSpentMana(c.GetEntity().GetRealTimeCost());
 
-                    // handle battlecry targets
+                    // TODO: entityhastargets didnt have targets with a sheep on an empty board, find a better fix
+                    // handle spell targets
                     if (gs.EntityHasTargets(c.GetEntity()))
                     {
                         doTargetting = true;
