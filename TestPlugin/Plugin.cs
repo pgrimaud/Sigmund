@@ -202,7 +202,7 @@ namespace Plugin
             var myCards = myPlayer.GetHandZone().GetCards().ToList();
 
             // can't get any more minions if too many on the board
-            if (myPlayer.GetBattlefieldZone().GetCardCount() > 7)
+            if (myPlayer.GetBattlefieldZone().GetCardCount() >= 7)
             {
                 return null;
             }
@@ -428,29 +428,79 @@ namespace Plugin
                     {
                         EnemyActionHandler.Get().NotifyOpponentOfTargetModeBegin(c);
 
-                        // get a list of my cards on the battlefield, could do enemy cards as well
-                        var myPlayedCards = myPlayer.GetBattlefieldZone().GetCards().ToList();
+                        Entity targetEntity= null;
 
-                        // look through the cards, would normally select one based on this
-                        foreach (Card card in myPlayedCards)
+                        var eHero = ePlayer.GetHeroCard().GetEntity();
+                        if (gs.IsValidOptionTarget(eHero))
                         {
-                            var e = card.GetEntity();
-                            Log.log("considering for battlecry: " + e.GetName());
+                            Log.log("Can attack hero");
+                            targetEntity = eHero;
                         }
 
-                        // for now just do the first card in the list
-                        gs.GetGameEntity().NotifyOfBattlefieldCardClicked(myPlayedCards[0].GetEntity(), true);
+                        // get a list of my cards on the battlefield
+                        var myPlayedCards = myPlayer.GetBattlefieldZone().GetCards().ToList();
+                        if (myPlayedCards.Count > 0)
+                        {
+                            // look through the cards, would normally select one based on this
+                            foreach (Card card in myPlayedCards)
+                            {
+                                var e = card.GetEntity();
+                                if (gs.IsValidOptionTarget(e))
+                                {
+                                    Log.log("is valid target: " + e.GetName());
+                                    Log.log("considering for battlecry: " + e.GetName());
+                                    targetEntity = e;
+                                }
+                                else
+                                {
+                                    Log.log("is NOT valid target: " + e.GetName());
+                                }
+                            }
+                        }
+
+                        // get a list of enemy cards on the battlefield
+                        var ePlayedCards = ePlayer.GetBattlefieldZone().GetCards().ToList();
+                        if (ePlayedCards.Count > 0)
+                        {
+                            // look through the cards, would normally select one based on this
+                            foreach (Card card in ePlayedCards)
+                            {
+                                var e = card.GetEntity();
+                                if (gs.IsValidOptionTarget(e))
+                                {
+                                    Log.log("is valid target: " + e.GetName());
+                                    Log.log("considering for battlecry: " + e.GetName());
+                                    targetEntity = e;
+                                }
+                                else
+                                {
+                                    Log.log("is NOT valid target: " + e.GetName());
+                                }
+                            }
+                        }
+                        if (targetEntity == null)
+                        {
+                            Log.log("    No target entity selected");
+                            return false;
+                        }
+
+                        Log.log("selected targetEntity: " + targetEntity.GetName());
+                        gs.GetGameEntity().NotifyOfBattlefieldCardClicked(targetEntity, true);
 
                         myPlayer.GetBattlefieldZone().UnHighlightBattlefield();
                         Log.log("    Response mode pre: " + gs.GetResponseMode().ToString());
-                        if (InputManager.Get().DoNetworkResponse(myPlayedCards[0].GetEntity()))
+                        if (InputManager.Get().DoNetworkResponse(targetEntity))
                         {
                             Log.log("    Response mode post: " + gs.GetResponseMode().ToString());
                             EnemyActionHandler.Get().NotifyOpponentOfTargetEnd();
 
                             myPlayer.GetHandZone().UpdateLayout(-1, true);
                             myPlayer.GetBattlefieldZone().UpdateLayout();
-                            Log.log("    target succeeded");
+                            Log.log("    did battlecry on: " + targetEntity.GetName());
+                        }
+                        else
+                        {
+                            Log.log("    DoTarget outer DoNetworkReponse failed");
                         }
                     }
                 }
