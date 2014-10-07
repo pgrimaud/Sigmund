@@ -1,5 +1,6 @@
 Sigmund
 =======
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/pgrimaud/Sigmund?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Card game automation framework
 
 Hooks game and loads plugins as they are modified (or explicitly requested to be reloaded).
